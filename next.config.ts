@@ -1,9 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  cacheComponents: true,
-  partialPrefetching: true,
+  reactStrictMode: true,
+  // The dev-tools badge must never be captured by the film render harness.
+  devIndicators: false,
   turbopack: {
     rules: {
       "*.css": {

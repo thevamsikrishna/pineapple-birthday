@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Operation: Pineapple Birthday 🍍
 
-## Getting Started
+A cinematic, mobile-first, four-scene interactive birthday adventure for Anshu ("Pineapple"), starring **Momo the monkey**. Built with Next.js 16, React 19, TypeScript, Tailwind 4, Motion, hand-built SVG illustration, Canvas particles and Web Audio.
 
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+01  Starry birthday intro      → "Let's celebrate"
+02  The birthday film          → play / skip / continue   (girl cuts the cake, animals celebrate, Momo's strawberry gag)
+03  Pineappleverse playground  → find 3 surprises         (singing pineapple · mischievous balloon · mystery gift)
+04  Make a wish finale         → blow 3 candles           (fireworks, confetti mishap, greeting card)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Quick start
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm install
+npm run dev          # http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build && npm start      # production
+npm test                        # unit tests (age logic, scene machine, score)
+npm run test:e2e                # Playwright walkthrough against :3000 (writes docs/screenshots/)
+npm run render:film             # re-render the film MP4s + poster + soundtrack (needs ffmpeg)
+npm run lint && npm run typecheck
+```
 
-## Learn More
+## What is where
 
-To learn more about Next.js, take a look at the following resources:
+| Path | Purpose |
+|---|---|
+| `components/BirthdayExperience.tsx` | SPA shell: state machine, scene transitions, global audio sync |
+| `components/SceneShell.tsx` | Home / Back, `01 / 04` progress, mute toggle |
+| `components/MomoMascot.tsx` | The one canonical mascot (layered SVG, 12 CSS clips, tap-to-react, hat token) |
+| `components/scenes/*` | The four scenes |
+| `components/film/FilmStage.tsx` | Time-driven 7-shot film (`t` in → exact frame out) |
+| `components/film/Cast.tsx` | Girl, bunny, deer, kitten, birds, squirrel, cake, props, posable Momo |
+| `components/effects/*` | Starfield, fireflies, confetti, fireworks, scene-transition wipes |
+| `lib/birthdayAge.ts` | Age / countdown in `Asia/Kolkata` (28 on 2027‑02‑04) |
+| `lib/sceneMachine.ts` | Pure reducer: scenes, music, film status, collectibles, candles |
+| `lib/song.ts`, `lib/sfx.ts`, `lib/audioController.ts` | Original tune + effects, synthesized with Web Audio, opt-in only |
+| `lib/assets.ts` | Single asset registry with honest fallbacks |
+| `lib/exportCard.ts` | Client-side "Save a Birthday Card" PNG export |
+| `app/film-render/` | Dev-only render harness used by `scripts/render-film.mjs` (not a scene, never linked) |
+| `docs/asset-manifest.md`, `docs/storyboard.md` | Asset status and the shot list |
+| `tests/` | Vitest unit tests + Playwright walkthrough |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Design system
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Tokens live in `app/globals.css`: midnight indigo `#16152E`, lavender `#BBA9F7`, cream `#FFF5DF`, honey `#F8C86A`, pineapple `#FFD75E`, candy pink `#F5A8CE`, mint `#8FD2AF`, plum `#29223D`. Display type is Fraunces, UI type is Nunito Sans, both with system fallbacks. Motion is soft and bounded; `prefers-reduced-motion` collapses transitions to quick fades and stops idle loops.
 
-## Deploy on Vercel
+## Behaviour guarantees
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Exactly four scenes, no page reloads, Back / Home from scenes 2–4, `Skip film` and `Continue` always available.
+- Sound is **off by default**. One global toggle covers music and effects. The film's own soundtrack is used when the MP4 plays and the live synth is paused meanwhile.
+- The MP4 is probed with a HEAD request; if it is missing or fails, the live-animated storybook plays instead and the frame is labelled accordingly.
+- Progress (surprises found, candles out, music preference) persists across Back / Forward in the same visit. `Replay the Adventure` resets the run but keeps the music preference.
+- Hit targets ≥ 44 px, keyboard-focusable controls with visible focus, live regions for progress.
+- No analytics, cookies, forms, logins, tracking pixels or outbound requests besides Google Fonts.
+- The voice-message control only renders when a real recording is registered in `lib/assets.ts`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deployment
+
+Static-friendly Next.js app. On Vercel: import the repo, framework preset "Next.js", no environment variables needed. Anywhere else: `npm run build && npm start` behind any Node host, or `next build` output served by a Node process. Keep `public/film/*.mp4` in the deploy (≈ a few MB each).
+
+Build privately first; share the link only through a channel that is welcome.
+
+## Honest status
+
+See the end of `docs/asset-manifest.md` for what is generated, included, and intentionally absent (the voice note).
