@@ -1,9 +1,24 @@
 "use client";
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { initialState, reducer, transitionFor, type ExperienceAction, type Scene, type TransitionKind } from "@/lib/sceneMachine";
+import {
+  initialState,
+  reducer,
+  transitionFor,
+  type ExperienceAction,
+  type Scene,
+  type TransitionKind,
+} from "@/lib/sceneMachine";
 import { audio } from "@/lib/audioController";
 import { useReducedMotion } from "@/lib/useReducedMotion";
+import { installVisitEnd, trackScene } from "@/lib/tracker";
 import { SceneShell, type SceneNav } from "./SceneShell";
 import { SparkleTransition } from "./effects/SparkleTransition";
 import { BirthdayIntroScene } from "./scenes/BirthdayIntroScene";
@@ -30,11 +45,19 @@ export function BirthdayExperience() {
 
   // Mirror the audio controller's enabled flag into state (and vice versa).
   useEffect(() => {
-    const unsubscribe = audio.subscribe((enabled) => dispatch({ type: "SET_MUSIC", enabled }));
+    const unsubscribe = audio.subscribe((enabled) =>
+      dispatch({ type: "SET_MUSIC", enabled }),
+    );
     return () => {
       unsubscribe();
     };
   }, []);
+
+  // Visit footprint: which scene, when, and for how long (see lib/tracker.ts; owner opt-out via ?owner=1).
+  useEffect(() => {
+    trackScene(state.scene);
+  }, [state.scene]);
+  useEffect(() => installVisitEnd(), []);
 
   const toggleMusic = useCallback(() => {
     void audio.toggle();
@@ -52,7 +75,10 @@ export function BirthdayExperience() {
       if (pending.current) window.clearTimeout(pending.current);
       setOverlay(kind);
       audio.sfx(kind === "pineapple-portal" ? "portal" : "whoosh");
-      pending.current = window.setTimeout(() => dispatch(action), (kind === "none" ? 0 : TRANSITION_MS[kind]) * 0.5);
+      pending.current = window.setTimeout(
+        () => dispatch(action),
+        (kind === "none" ? 0 : TRANSITION_MS[kind]) * 0.5,
+      );
     },
     [reduced, state.scene],
   );
@@ -61,7 +87,8 @@ export function BirthdayExperience() {
     const order: Scene[] = ["intro", "film", "playground", "finale"];
     const i = order.indexOf(state.scene);
     return {
-      next: () => i < order.length - 1 && travel({ type: "NEXT" }, order[i + 1]),
+      next: () =>
+        i < order.length - 1 && travel({ type: "NEXT" }, order[i + 1]),
       back: () => i > 0 && travel({ type: "BACK" }, order[i - 1]),
       home: () => travel({ type: "HOME" }, "intro"),
       goTo: (scene) => travel({ type: "GO_TO", scene }, scene),
@@ -69,16 +96,24 @@ export function BirthdayExperience() {
     };
   }, [state.scene, travel]);
 
-  useEffect(() => () => {
-    if (pending.current) window.clearTimeout(pending.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (pending.current) window.clearTimeout(pending.current);
+    },
+    [],
+  );
 
   const onOverlayDone = useCallback(() => setOverlay("none"), []);
 
   const sceneKey = `${state.scene}-${state.runId}`;
 
   return (
-    <SceneShell scene={state.scene} nav={nav} musicEnabled={state.musicEnabled} onToggleMusic={toggleMusic}>
+    <SceneShell
+      scene={state.scene}
+      nav={nav}
+      musicEnabled={state.musicEnabled}
+      onToggleMusic={toggleMusic}
+    >
       <AnimatePresence mode="sync" initial={false}>
         <motion.div
           key={sceneKey}
@@ -88,15 +123,41 @@ export function BirthdayExperience() {
           exit={{ opacity: 0 }}
           transition={{ duration: reduced ? 0.1 : 0.45, ease: "easeOut" }}
         >
-          {state.scene === "intro" && <BirthdayIntroScene nav={nav} musicEnabled={state.musicEnabled} onEnableMusic={() => audio.setEnabled(true)} />}
-          {state.scene === "film" && <BirthdayFilmScene nav={nav} musicEnabled={state.musicEnabled} filmStatus={state.filmStatus} dispatch={dispatch} />}
-          {state.scene === "playground" && <PineappleverseScene nav={nav} collected={state.collected} dispatch={dispatch} />}
+          {state.scene === "intro" && (
+            <BirthdayIntroScene
+              nav={nav}
+              musicEnabled={state.musicEnabled}
+              onEnableMusic={() => audio.setEnabled(true)}
+            />
+          )}
+          {state.scene === "film" && (
+            <BirthdayFilmScene
+              nav={nav}
+              musicEnabled={state.musicEnabled}
+              filmStatus={state.filmStatus}
+              dispatch={dispatch}
+            />
+          )}
+          {state.scene === "playground" && (
+            <PineappleverseScene
+              nav={nav}
+              collected={state.collected}
+              dispatch={dispatch}
+            />
+          )}
           {state.scene === "finale" && (
-            <WishFinaleScene nav={nav} candlesOut={state.candlesOut} fireworksTriggered={state.fireworksTriggered} dispatch={dispatch} />
+            <WishFinaleScene
+              nav={nav}
+              candlesOut={state.candlesOut}
+              fireworksTriggered={state.fireworksTriggered}
+              dispatch={dispatch}
+            />
           )}
         </motion.div>
       </AnimatePresence>
-      {overlay !== "none" && <SparkleTransition kind={overlay} onDone={onOverlayDone} />}
+      {overlay !== "none" && (
+        <SparkleTransition kind={overlay} onDone={onOverlayDone} />
+      )}
     </SceneShell>
   );
 }

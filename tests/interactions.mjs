@@ -25,6 +25,15 @@ const check = (cond, msg) => {
 };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+function readEnvLocal(key) {
+  try {
+    const line = fs.readFileSync(path.resolve(".env.local"), "utf8").split("\n").find((l) => l.startsWith(`${key}=`));
+    return line ? line.slice(key.length + 1).trim() : "";
+  } catch {
+    return "";
+  }
+}
+
 /** Computes the expected age the same way the app does, so the test is date-independent. */
 function expectedAge(now = new Date()) {
   const fmt = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Kolkata", year: "numeric", month: "numeric", day: "numeric" });
@@ -43,7 +52,8 @@ async function walkthrough({ name, viewport, reducedMotion = "no-preference", is
   page.on("pageerror", (e) => errors.push(`pageerror: ${e.message}`));
   page.on("console", (m) => {
     // HEAD probes for optional media (film MP4/poster, voice note) 404 by design when assets are missing.
-    if (m.type() === "error" && !/404/.test(m.text())) errors.push(`console: ${m.text()}`);
+    // The deliberate wrong-password attempt logs a 401 resource error; that is expected.
+    if (m.type() === "error" && !/404|401/.test(m.text())) errors.push(`console: ${m.text()}`);
   });
   page.on("response", (r) => {
     if (r.status() === 404 && !/\/(film|music|voice)\//.test(r.url())) errors.push(`unexpected 404: ${r.url()}`);
@@ -51,8 +61,24 @@ async function walkthrough({ name, viewport, reducedMotion = "no-preference", is
   const shot = (file) => page.screenshot({ path: path.join(OUT, `${name}-${file}.png`) });
   const fast = reducedMotion === "reduce";
 
-  // ── Scene 1 ──
+  // ── Password gate (only when BIRTHDAY_PASSWORD is configured) ──
   await page.goto(BASE, { waitUntil: "networkidle" });
+  if ((await page.getByTestId("gate-password").count()) === 1) {
+    const pw = process.env.BIRTHDAY_PASSWORD || readEnvLocal("BIRTHDAY_PASSWORD");
+    check(!!pw, "password available to the test (BIRTHDAY_PASSWORD or .env.local)");
+    await page.getByTestId("gate-password").fill("definitely-wrong");
+    await page.getByTestId("gate-submit").click();
+    await page.getByText("That’s not it. Try again.").waitFor({ timeout: 8000 });
+    check(true, "wrong password is rejected");
+    await page.getByTestId("gate-password").fill(pw || "");
+    await page.getByTestId("gate-submit").click();
+    await page.getByTestId("cta-celebrate").waitFor({ timeout: 15000 });
+    check(true, "correct password opens the experience");
+    await page.goto(BASE, { waitUntil: "networkidle" });
+    check((await page.getByTestId("gate-password").count()) === 0, "unlock cookie persists across reloads");
+  }
+
+  // ── Scene 1 ──
   await sleep(fast ? 400 : 3500);
   await shot("1-intro");
   const age = await page.getByTestId("age-number").innerText();

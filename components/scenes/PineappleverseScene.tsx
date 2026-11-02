@@ -24,6 +24,7 @@ import {
 import { audio } from "@/lib/audioController";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 import { useViewBoxMapping } from "@/lib/useViewBoxMapping";
+import { track } from "@/lib/tracker";
 import type { SceneNav } from "@/components/SceneShell";
 
 const HINTS: Record<Collectible, string> = {
@@ -117,6 +118,7 @@ export function PineappleverseScene({
         setGolden(1);
         audio.sfx("chime");
         dispatch({ type: "COLLECT", item: "singing-pineapple" });
+        track("surprise_found", { detail: "singing pineapple" });
         momo.current?.play("dance");
         setHint("It sings! A golden pineapple! That’s one.");
       },
@@ -143,6 +145,7 @@ export function PineappleverseScene({
             setHatToken(true);
             audio.sfx("sparkle");
             dispatch({ type: "COLLECT", item: "balloon" });
+            track("surprise_found", { detail: "balloon" });
             setHint(
               "Whee! Look in my hat, there was a token in there the whole time.",
             );
@@ -168,6 +171,7 @@ export function PineappleverseScene({
       () => {
         setGiftMessage(true);
         dispatch({ type: "COLLECT", item: "gift" });
+        track("surprise_found", { detail: "mystery gift" });
         momo.current?.play("clap");
         setHint("Extra cake? Extra cake! That’s the best one.");
       },

@@ -58,6 +58,24 @@ Tokens live in `app/globals.css`: midnight indigo `#16152E`, lavender `#BBA9F7`,
 - No analytics, cookies, forms, logins, tracking pixels or outbound requests besides Google Fonts.
 - The voice-message control only renders when a real recording is registered in `lib/assets.ts`.
 
+## Password door and visit tracking
+
+**Password.** The site is locked behind a password door (Momo asks for "the secret word"). The password is never stored in the repo:
+
+- Locally: create `.env.local` with `BIRTHDAY_PASSWORD=…` (see `.env.example`). Without it, `npm run dev` opens directly; a production build stays locked and tells you the password is not configured.
+- On Vercel: Project → Settings → Environment Variables → add `BIRTHDAY_PASSWORD`, then redeploy.
+- A correct password sets an HttpOnly cookie for 30 days. Changing the password logs everyone out.
+
+**Tracking.** Once unlocked, the page sends small events to `/api/track`: scene opened (with seconds since arrival), scene left (seconds spent), film played / finished / skipped, surprises found, candles out, card saved, and a final "visit ended" with the total time and last scene. No IP addresses or fingerprints are kept; each visit gets a random id so two visits can be told apart, plus a coarse device label (iPhone / Android / Mac / Windows) and the country Vercel reports.
+
+Where to read it:
+
+1. **Vercel logs (zero setup).** Project → Logs, filter for `pineapple-track`. Each event is one JSON line.
+2. **Discord notifications (recommended, free, permanent).** In any Discord server: channel settings → Integrations → Webhooks → New webhook → Copy URL. Add it on Vercel as `TRACK_WEBHOOK_URL` and redeploy. Every event then arrives as a readable message, for example "👀 [a1b2c3 · iPhone · IN] opened scene 2 · Birthday film after 41s" and "⏱️ left scene 2 after 33s on it".
+3. **Your own webhook.** Set `TRACK_WEBHOOK_FORMAT=json` to receive the raw events at any URL instead.
+
+Keep your own visits out of the feed by opening the site once with `?owner=1` on each of your devices (it is remembered in that browser; `?owner=0` undoes it). Set `TRACKING=off` to switch tracking off completely.
+
 ## Deployment
 
 Static-friendly Next.js app. On Vercel: import the repo, framework preset "Next.js", no environment variables needed. Anywhere else: `npm run build && npm start` behind any Node host, or `next build` output served by a Node process. Keep `public/film/*.mp4` in the deploy (≈ a few MB each).
