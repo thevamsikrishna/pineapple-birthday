@@ -5,6 +5,8 @@
  * All poses are plain props so the same art can be driven by time (film) or by CSS (scenes).
  */
 import type { ReactNode } from "react";
+import { MomoFigure, MomoGradients } from "../momo/MomoFigure";
+import type { MomoPose } from "../momo/types";
 
 export const PALETTE = {
   skin: "#F7D2B8",
@@ -24,6 +26,7 @@ export const PALETTE = {
 
 export const Defs = ({ prefix = "cast" }: { prefix?: string }) => (
   <defs>
+    <MomoGradients prefix={`${prefix}-momo`} />
     <linearGradient id={`${prefix}-skirt`} x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stopColor="#FFE1C9" />
       <stop offset="100%" stopColor={PALETTE.peachDeep} />
@@ -316,67 +319,13 @@ export function Squirrel({ facing = 1, dance = 0 }: { facing?: 1 | -1; dance?: n
 }
 
 /* ─────────────────────────── Momo (film-posable art) ─────────────────────────── */
-export interface MomoPose {
-  armL?: number;
-  armR?: number;
-  mouthO?: boolean;
-  hatDx?: number;
-  hatDy?: number;
-  hatRot?: number;
-  bodyRot?: number;
-  eyeScale?: number;
-  eyesClosed?: boolean;
-}
+export type { MomoPose } from "../momo/types";
 
-/** Same silhouette and colors as components/MomoMascot.tsx, but every limb is a prop. */
+/** Same figure as the interactive MomoMascot, posed by props for deterministic frames. */
 export function MomoArt({ prefix = "cast", pose = {}, scale = 1 }: { prefix?: string; pose?: MomoPose; scale?: number }) {
-  const { armL = 0, armR = 0, mouthO = false, hatDx = 0, hatDy = 0, hatRot = 0, bodyRot = 0, eyeScale = 1, eyesClosed = false } = pose;
   return (
-    <g transform={`scale(${scale}) translate(-100 -232) rotate(${bodyRot} 100 170)`}>
-      <ellipse cx="100" cy="232" rx="44" ry="7" fill="#0E0D22" opacity="0.2" />
-      <path d="M146 188 C186 184 196 148 170 134 C158 128 150 140 158 148" fill="none" stroke="#A0652F" strokeWidth="11" strokeLinecap="round" />
-      <ellipse cx="76" cy="218" rx="18" ry="13" fill="#9A6230" />
-      <ellipse cx="124" cy="218" rx="18" ry="13" fill="#9A6230" />
-      <ellipse cx="72" cy="222" rx="12" ry="8" fill="#F3DFC0" />
-      <ellipse cx="128" cy="222" rx="12" ry="8" fill="#F3DFC0" />
-      <ellipse cx="100" cy="172" rx="44" ry="50" fill={`url(#${prefix}-fur)`} />
-      <ellipse cx="100" cy="180" rx="27" ry="34" fill={`url(#${prefix}-creamfur)`} />
-      <g transform={`rotate(${armL} 68 150)`}>
-        <path d="M68 150 C50 165 44 180 50 196" fill="none" stroke="#B4723A" strokeWidth="14" strokeLinecap="round" />
-        <circle cx="50" cy="198" r="10" fill="#F3DFC0" />
-      </g>
-      <g transform={`rotate(${armR} 132 150)`}>
-        <path d="M132 150 C150 165 156 180 150 196" fill="none" stroke="#B4723A" strokeWidth="14" strokeLinecap="round" />
-        <circle cx="150" cy="198" r="10" fill="#F3DFC0" />
-      </g>
-      <circle cx="48" cy="102" r="19" fill="#A0652F" />
-      <circle cx="152" cy="102" r="19" fill="#A0652F" />
-      <circle cx="50" cy="103" r="10" fill="#F3C9B0" />
-      <circle cx="150" cy="103" r="10" fill="#F3C9B0" />
-      <circle cx="100" cy="106" r="52" fill={`url(#${prefix}-fur)`} />
-      <path d="M98 56 C92 44 104 36 108 48" fill="none" stroke="#8F5629" strokeWidth="6" strokeLinecap="round" />
-      <circle cx="80" cy="104" r="25" fill={`url(#${prefix}-creamfur)`} />
-      <circle cx="120" cy="104" r="25" fill={`url(#${prefix}-creamfur)`} />
-      <ellipse cx="100" cy="122" rx="33" ry="25" fill={`url(#${prefix}-creamfur)`} />
-      <circle cx="70" cy="120" r="7" fill="#F5A8CE" opacity="0.55" />
-      <circle cx="130" cy="120" r="7" fill="#F5A8CE" opacity="0.55" />
-      <Eye x={84} y={103} r={10} scale={eyeScale} closed={eyesClosed} />
-      <Eye x={116} y={103} r={10} scale={eyeScale} closed={eyesClosed} />
-      <ellipse cx="100" cy="118" rx="4.2" ry="3" fill="#8F5629" />
-      {mouthO ? (
-        <ellipse cx="100" cy="130" rx="5" ry="7" fill="#29223D" />
-      ) : (
-        <path d="M89 127 Q100 138 111 127" fill="none" stroke="#29223D" strokeWidth="2.6" strokeLinecap="round" />
-      )}
-      <g transform={`translate(${hatDx} ${hatDy}) rotate(${hatRot} 100 62)`}>
-        <g transform="rotate(-14 100 62)">
-          <path d="M100 14 C88 24 86 36 95 46 C104 36 108 24 100 14Z" fill={`url(#${prefix}-leaf)`} />
-          <path d="M100 16 C112 24 114 36 104 46 C96 36 92 24 100 16Z" fill="#8FD2AF" opacity="0.9" />
-          <path d="M78 78 L100 30 L122 78 Z" fill={`url(#${prefix}-hat)`} />
-          <path d="M78 78 L100 30 L122 78 Z" fill={`url(#${prefix}-hatch)`} />
-          <path d="M76 78 Q100 70 124 78 Q100 86 76 78Z" fill="#F5A8CE" />
-        </g>
-      </g>
+    <g transform={`scale(${scale}) translate(-100 -232)`}>
+      <MomoFigure prefix={`${prefix}-momo`} pose={pose} />
     </g>
   );
 }
